@@ -5,7 +5,13 @@
     "paths": {
       "@/*": [
         "./*"
-      ]
+      ],
+      "@app/*": ["./app/*"],
+      "@domain/*": ["./domain/*"],
+      "@infra/*": ["./infra/*"],
+      "@presentation/*": ["./presentation/*"],
+      "@data/*": ["./data/*"],
+      "@shared/*": ["./shared/*"]
     }
   },
   "include": [
