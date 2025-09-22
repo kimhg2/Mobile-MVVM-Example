@@ -1,5 +1,12 @@
 import type { AuthTokens } from "@domain/auth/ports/Auth.repository";
 
+import { User } from '@/domain/auth/entities/User.entity';
+import { Email } from '@/domain/auth/value-objects/Email.vo';
+import { UserDTO } from '../dto/User.dto';
+
+export const toEntityUser = (dto: UserDTO): User =>
+  new User(dto.id, Email.create(dto.email), { value: dto.name });
+
 const DEFAULT_SKEW_SEC = 30; // subtract to refresh proactively
 
 export const mapTokens = (dto: any, skewSec: number = DEFAULT_SKEW_SEC): AuthTokens => {
@@ -13,3 +20,4 @@ export const mapTokens = (dto: any, skewSec: number = DEFAULT_SKEW_SEC): AuthTok
     expiresAt,
   };
 };
+

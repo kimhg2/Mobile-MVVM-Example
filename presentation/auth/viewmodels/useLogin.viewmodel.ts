@@ -1,28 +1,27 @@
-import { LoginWithPassword } from "@domain/auth/usecases/LoginWithPassword.usecase";
-import type { AuthTokens } from "@domain/auth/ports/Auth.repository";
-import type { TokenStore } from "@domain/auth/ports/TokenStore.port";
 import { useState } from "react";
+
+import type { User } from "@domain/auth/entities/User.entity";
+import { AuthError } from "@domain/auth/errors/AuthError";
+import { LoginWithPassword } from "@domain/auth/usecases/LoginWithPassword.usecase";
 
 type State = { email: string; password: string; loading: boolean; error?: string };
 type VM = State & { setEmail(v: string): void; setPassword(v: string): void; submit(): Promise<void> };
 
 export const useLoginViewModel = (deps: {
   loginUC: LoginWithPassword;
-  session: { setTokens(tokens: AuthTokens): void; clear(): void };
-  tokenStore: TokenStore;
+  onSuccess?(user: User): void;
 }): VM => {
   const [state, set] = useState<State>({ email: "", password: "", loading: false });
 
   const submit = async () => {
     set((s) => ({ ...s, loading: true, error: undefined }));
     try {
-      const res = await deps.loginUC.execute(state.email, state.password);
-      // Save tokens to session (memory) and persistent store (refresh token)
-      if (res?.tokens) {
-        deps.session.setTokens(res.tokens);
-        await deps.tokenStore.setTokens(res.tokens);
+      const res = await deps.loginUC.execute({ email: state.email, password: state.password });
+      if (!res.ok) {
+        set((s) => ({ ...s, error: toErrorMessage(res.error) }));
+        return;
       }
-      // 네비게이션 or emit success
+      deps.onSuccess?.(res.value);
     } catch (e: any) {
       set((s) => ({ ...s, error: e.message ?? "Login failed" }));
     } finally {
@@ -37,3 +36,15 @@ export const useLoginViewModel = (deps: {
     submit,
   };
 };
+
+function toErrorMessage(error: AuthError): string {
+  switch (error.kind) {
+    case "InvalidCredentials":
+      return "Invalid email or password";
+    case "Network":
+      return "Network error. Please try again.";
+    case "Unknown":
+    default:
+      return error.message ?? "Login failed";
+  }
+}

@@ -1,4 +1,8 @@
 
+import { Result } from '@/shared/result';
+import { User } from '../entities/User.entity';
+import { AuthError } from '../errors/AuthError';
+
 export type AuthType = {
   email: string;
   password: string;
@@ -13,7 +17,7 @@ export type AuthTokens = {
 };
 
 export interface AuthRepository {
-  login(params: AuthType): Promise<{ tokens: AuthTokens; userId?: string }>;
+  login(params: AuthType): Promise<Result<User, AuthError>>;
   refresh(refreshToken: string): Promise<AuthTokens>;
   me(): Promise<{ userId: string; email: string }>;
 }
