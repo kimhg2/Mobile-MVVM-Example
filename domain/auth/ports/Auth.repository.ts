@@ -18,6 +18,7 @@ export type AuthTokens = {
 
 export interface AuthRepository {
   login(params: AuthType): Promise<Result<User, AuthError>>;
+  signup(params: AuthType): Promise<Result<User, AuthError>>;
   refresh(refreshToken: string): Promise<AuthTokens>;
-  me(): Promise<{ userId: string; email: string }>;
+  me(): Promise<User>;
 }

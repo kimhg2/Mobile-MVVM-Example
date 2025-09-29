@@ -5,12 +5,15 @@ import { AuthRepositoryImpl } from "@data/auth/repositories/AuthRepository.impl"
 import { tokenStore } from "@data/auth/stores/TokenStore.secure";
 import { LoginWithPassword } from "@domain/auth/usecases/LoginWithPassword.usecase";
 import { useLoginViewModel } from "@presentation/auth/viewmodels/useLogin.viewmodel";
+import { useNetwork } from "@/hooks/useNetwork";
 
 export default function LoginScreen() {
   // 간단 DI (Composition Root에서 주입 권장)
   const vm = useLoginViewModel({
     loginUC: new LoginWithPassword(new AuthRepositoryImpl()),
   });
+  const network = useNetwork();
+  const isOffline = !network.isOnline;
 
   // DEV: SecureStore 저장 여부 확인
   const [storedInfo, setStoredInfo] = React.useState<string>("");
@@ -54,11 +57,11 @@ export default function LoginScreen() {
 
         <Pressable
           onPress={vm.submit}
-          disabled={vm.loading}
+          disabled={vm.loading || isOffline}
           style={({ pressed }) => [
             styles.button,
             pressed && styles.buttonPressed,
-            vm.loading && styles.buttonDisabled,
+            (vm.loading || isOffline) && styles.buttonDisabled,
           ]}
         >
           {vm.loading ? (
@@ -67,7 +70,7 @@ export default function LoginScreen() {
             <Text style={styles.buttonText}>Login</Text>
           )}
         </Pressable>
-
+        {isOffline && <Text style={styles.offlineText}>You appear to be offline. Check your connection.</Text>}
         {!!vm.error && <Text style={styles.errorText}>{vm.error}</Text>}
 
         {__DEV__ && (
@@ -142,6 +145,11 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: "#EF4444",
+    marginTop: 4,
+    textAlign: "center",
+  },
+  offlineText: {
+    color: "#6B7280",
     marginTop: 4,
     textAlign: "center",
   },

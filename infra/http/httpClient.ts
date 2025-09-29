@@ -1,6 +1,8 @@
 
+import { mapTokens } from "@data/auth/mappers/auth.mapper";
 import { tokenStore } from "@data/auth/stores/TokenStore.secure";
 import { AuthSession } from "@infra/auth/AuthSession";
+import { networkMonitor } from "@infra/network/NetworkMonitor";
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 
 export const http = axios.create({ baseURL: "http://localhost:3001" });
@@ -13,16 +15,14 @@ let refreshingPromise: Promise<void> | null = null;
 async function doRefresh(): Promise<void> {
   const refreshToken = await tokenStore.getRefreshToken();
   if (!refreshToken) throw new Error("No refresh token");
+  if (!networkMonitor.isOnline()) {
+    throw offlineError();
+  }
   const { data } = await refreshClient.post("/auth/refresh", { refreshToken });
-  AuthSession.setTokens({
-    tokenType: String(data.tokenType ?? data.token_type ?? "Bearer"),
-    accessToken: String(data.accessToken ?? data.access_token ?? ""),
-    refreshToken: String(data.refreshToken ?? data.refresh_token ?? refreshToken),
-    // Use same skew as mapper
-    expiresAt: Date.now() + Math.max(0, Number(data.expiresIn ?? data.expires_in ?? 0) - 30) * 1000,
-  });
+  const tokens = mapTokens({ refreshToken, ...data });
+  AuthSession.setTokens(tokens);
   // Persist potentially rotated refresh token
-  await tokenStore.setTokens(AuthSession.getTokens()!);
+  await tokenStore.setTokens(tokens);
 }
 
 function ensureRefreshing(): Promise<void> {
@@ -49,6 +49,9 @@ http.interceptors.request.use(async (config: AxiosRequestConfig & { _retry?: boo
     } catch {
       // proceed without auth if refresh failed
     }
+  }
+  if (!networkMonitor.isOnline()) {
+    return Promise.reject(offlineError());
   }
   const token = AuthSession.getAccessToken();
   const type = AuthSession.getTokenType();
@@ -84,3 +87,9 @@ http.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+function offlineError(): Error {
+  const error = new Error("Offline");
+  (error as any).code = "ERR_NETWORK_OFFLINE";
+  return error;
+}

@@ -41,10 +41,18 @@ function toErrorMessage(error: AuthError): string {
   switch (error.kind) {
     case "InvalidCredentials":
       return "Invalid email or password";
+    case "AlreadyExists":
+      return friendlyAlreadyExists(error.message);
     case "Network":
       return "Network error. Please try again.";
     case "Unknown":
     default:
       return error.message ?? "Login failed";
   }
+}
+
+function friendlyAlreadyExists(message?: string): string {
+  if (!message) return "Account already exists";
+  if (message === "email_already_registered") return "Account already exists";
+  return message;
 }
