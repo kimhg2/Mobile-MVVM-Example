@@ -2,13 +2,13 @@ import { Result } from "@/shared/result";
 import { tokenStore as secureTokenStore } from "@data/auth/stores/TokenStore.secure";
 import { User } from "@domain/auth/entities/User.entity";
 import { AuthError } from "@domain/auth/errors/AuthError";
-import type { AuthRepository, AuthTokens, AuthType } from "@domain/auth/ports/Auth.repository";
+import type { AuthRepository, AuthRequestOptions, AuthTokens, AuthType } from "@domain/auth/ports/Auth.repository";
 import type { TokenStore } from "@domain/auth/ports/TokenStore.port";
 import { Email } from "@domain/auth/value-objects/Email.vo";
 import { AuthSession } from "@infra/auth/AuthSession";
 import { http } from "@infra/http/httpClient";
 import { logger } from "@shared/logger";
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import { mapTokens } from "../mappers/auth.mapper";
 import { mapUser } from "../mappers/user.mapper";
 type Deps = {
@@ -21,9 +21,10 @@ const defaultDeps: Deps = {
 };
 export class AuthRepositoryImpl implements AuthRepository {
   constructor(private readonly deps: Deps = defaultDeps) {}
-  async login({ email, password }: AuthType): Promise<Result<User, AuthError>> {
+  async login({ email, password }: AuthType, options?: AuthRequestOptions): Promise<Result<User, AuthError>> {
     try {
-      const { data } = await http.post("/auth/login", { email, password });
+      const config: AxiosRequestConfig = buildRequestConfig(options);
+      const { data } = await http.post("/auth/login", { email, password }, config);
       const tokens = mapTokens({ ...data });
       await this.persistTokens(tokens);
       const user = await this.resolveUserAfterLogin(data, tokens, { email, password });
@@ -36,9 +37,10 @@ export class AuthRepositoryImpl implements AuthRepository {
       return Result.err(authError);
     }
   }
-  async signup({ email, password }: AuthType): Promise<Result<User, AuthError>> {
+  async signup({ email, password }: AuthType, options?: AuthRequestOptions): Promise<Result<User, AuthError>> {
     try {
-      const { data } = await http.post("/auth/signup", { email, password });
+      const config: AxiosRequestConfig = buildRequestConfig(options);
+      const { data } = await http.post("/auth/signup", { email, password }, config);
       const user = mapUser(data.user ?? data);
       return Result.ok(user);
     } catch (error) {
@@ -160,4 +162,15 @@ function base64UrlDecode(input: string): string {
     return bufferFactory.from(base64, "base64").toString("utf8");
   }
   return "";
+}
+
+function buildRequestConfig(options?: AuthRequestOptions): AxiosRequestConfig {
+  const headers: Record<string, string> = {};
+  if (options?.idempotencyKey) {
+    headers["Idempotency-Key"] = options.idempotencyKey;
+  }
+  return {
+    signal: options?.signal,
+    ...(Object.keys(headers).length ? { headers } : {}),
+  };
 }

@@ -18,8 +18,18 @@ export default function LoginScreen() {
     <View>
       <TextInput placeholder="email" value={vm.email} onChangeText={vm.setEmail} />
       <TextInput placeholder="password" value={vm.password} secureTextEntry onChangeText={vm.setPassword} />
-      <Button title={vm.loading ? "..." : "Login"} onPress={vm.submit} disabled={vm.loading || isOffline} />
+      <Button
+        title={vm.loading ? "..." : "Login"}
+        onPress={vm.submit}
+        disabled={vm.loading || isOffline || vm.waiting}
+      />
       {isOffline && <Text>Your device is offline.</Text>}
+      {vm.info && (
+        <View>
+          <Text>{vm.info}</Text>
+          <Button title="Sync now" onPress={vm.syncNow} disabled={vm.loading} />
+        </View>
+      )}
       {!!vm.error && <Text>{vm.error}</Text>}
     </View>
   );

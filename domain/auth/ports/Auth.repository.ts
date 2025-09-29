@@ -16,9 +16,14 @@ export type AuthTokens = {
   expiresAt: number;
 };
 
+export type AuthRequestOptions = {
+  idempotencyKey?: string;
+  signal?: AbortSignal;
+};
+
 export interface AuthRepository {
-  login(params: AuthType): Promise<Result<User, AuthError>>;
-  signup(params: AuthType): Promise<Result<User, AuthError>>;
+  login(params: AuthType, options?: AuthRequestOptions): Promise<Result<User, AuthError>>;
+  signup(params: AuthType, options?: AuthRequestOptions): Promise<Result<User, AuthError>>;
   refresh(refreshToken: string): Promise<AuthTokens>;
   me(): Promise<User>;
 }

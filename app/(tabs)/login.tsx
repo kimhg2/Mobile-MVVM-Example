@@ -57,11 +57,11 @@ export default function LoginScreen() {
 
         <Pressable
           onPress={vm.submit}
-          disabled={vm.loading || isOffline}
+          disabled={vm.loading || isOffline || vm.waiting}
           style={({ pressed }) => [
             styles.button,
             pressed && styles.buttonPressed,
-            (vm.loading || isOffline) && styles.buttonDisabled,
+            (vm.loading || isOffline || vm.waiting) && styles.buttonDisabled,
           ]}
         >
           {vm.loading ? (
@@ -71,6 +71,14 @@ export default function LoginScreen() {
           )}
         </Pressable>
         {isOffline && <Text style={styles.offlineText}>You appear to be offline. Check your connection.</Text>}
+        {vm.info && (
+          <View style={styles.retryContainer}>
+            <Text style={styles.infoText}>{vm.info}</Text>
+            <Pressable onPress={vm.syncNow} style={({ pressed }) => [styles.syncButton, pressed && styles.syncButtonPressed]}>
+              <Text style={styles.syncButtonText}>Sync now</Text>
+            </Pressable>
+          </View>
+        )}
         {!!vm.error && <Text style={styles.errorText}>{vm.error}</Text>}
 
         {__DEV__ && (
@@ -152,6 +160,28 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     marginTop: 4,
     textAlign: "center",
+  },
+  retryContainer: {
+    marginTop: 8,
+    alignItems: "center",
+    gap: 6,
+  },
+  infoText: {
+    color: "#6B7280",
+    textAlign: "center",
+  },
+  syncButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#111827",
+  },
+  syncButtonPressed: {
+    opacity: 0.85,
+  },
+  syncButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   helperText: {
     color: "#6B7280",

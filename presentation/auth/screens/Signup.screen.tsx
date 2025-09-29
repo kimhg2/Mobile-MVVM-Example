@@ -69,17 +69,25 @@ export default function SignupScreen() {
 
         <Pressable
           onPress={vm.submit}
-          disabled={isOffline}
+          disabled={isOffline || vm.waiting || vm.status === "loading"}
           style={({ pressed }) => [
             styles.button,
             pressed && styles.buttonPressed,
-            isOffline && styles.buttonDisabled,
+            (isOffline || vm.waiting || vm.status === "loading") && styles.buttonDisabled,
           ]}
         >
           <Text style={styles.buttonText}>Sign up</Text>
         </Pressable>
 
         {isOffline && <Text style={styles.offlineText}>You are offline. Connect to continue.</Text>}
+        {vm.info && (
+          <View style={styles.retryContainer}>
+            <Text style={styles.infoText}>{vm.info}</Text>
+            <Pressable onPress={vm.syncNow} style={({ pressed }) => [styles.syncButton, pressed && styles.syncButtonPressed]}>
+              <Text style={styles.syncButtonText}>Sync now</Text>
+            </Pressable>
+          </View>
+        )}
         <Text style={styles.helperText}>
           Already have an account? {" "}
           <Link href="/(tabs)/login" style={styles.linkText}>
@@ -159,6 +167,28 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#6B7280",
     marginTop: 4,
+  },
+  retryContainer: {
+    marginTop: 8,
+    alignItems: "center",
+    gap: 6,
+  },
+  infoText: {
+    textAlign: "center",
+    color: "#6B7280",
+  },
+  syncButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#111827",
+  },
+  syncButtonPressed: {
+    opacity: 0.85,
+  },
+  syncButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   linkText: {
     color: "#111827",
